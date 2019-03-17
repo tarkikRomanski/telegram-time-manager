@@ -2,9 +2,10 @@
 
 ## Commands
 
-- /create [\<name>] [\<description>]
+- /create
 - /start [\<name>|\<id>]
 - /pause
+- /show [\<name>|\<id>]
 - /end 
 - /delete
 - /edit [name:\<name>] [description:\<description>]
