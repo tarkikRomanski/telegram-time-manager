@@ -42,19 +42,17 @@ bot.onText(new RegExp(/show (.+)/), async (msg, match) => {
 bot.on('message', async msg => {
     const telegramUser = msg.from;
 
-    User.getByTelegramId(telegramUser.id).then(user => {
-        if (!user) {
-            const newUser = User({
-                username: telegramUser.username,
-                telegramId: telegramUser.id,
-                lastName: telegramUser.last_name,
-                firstName: telegramUser.first_name,
-                language: telegramUser.language_code,
-            });
+    if (!await User.getByTelegramId(telegramUser.id)) {
+        const newUser = User({
+            username: telegramUser.username,
+            telegramId: telegramUser.id,
+            lastName: telegramUser.last_name,
+            firstName: telegramUser.first_name,
+            language: telegramUser.language_code,
+        });
 
-            User.createUser(newUser);
-        }
-    });
+        await User.createUser(newUser);
+    }
 
     const text = msg.text || '';
 
