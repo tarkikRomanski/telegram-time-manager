@@ -1,12 +1,12 @@
 import Mongoose from 'mongoose';
-const config = require('dotenv').config();
+import {store} from "../components/store";
 
 Mongoose.Promise = global.Promise;
 
 const connectToDb = async () => {
     try {
         await Mongoose.connect(
-            `mongodb+srv://${config.parsed.MONGO_USER}:${config.parsed.MONGO_PASSWORD}@${config.parsed.MONGO_HOST}/${config.parsed.MONGO_DB}`
+            `mongodb+srv://${store.config.MONGO_USER}:${store.config.MONGO_PASSWORD}@${store.config.MONGO_HOST}/${store.config.MONGO_DB}`
         );
         console.info('Connected to mongo!!!');
     }
