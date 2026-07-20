@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "index.js"
+  ],
+  "ignoreDependencies": [
+    "babel-cli",
+    "babel-core",
+    "babel-eslint",
+    "babel-plugin-inline-import",
+    "babel-plugin-transform-runtime",
+    "babel-preset-es2015",
+    "babel-preset-react",
+    "babel-preset-stage-0",
+    "eslint",
+    "eslint-config-airbnb",
+    "eslint-plugin-import",
+    "eslint-plugin-react"
+  ],
+  "duplicates": {
+    "minOccurrences": 3
+  },
+  "health": {
+    "maxCrap": 500
+  }
+}

@@ -2,6 +2,7 @@ import Task, {TASK_STATUS} from "../db/Models/Task";
 import EMOJI from "../components/emoji";
 import {bold} from "../components/formation";
 import {store} from "../components/store";
+import {getTelegramOptions} from "./helpers";
 
 const formatSeconds = sec => {
     const totalSec = Math.max(0, Math.floor(sec));
@@ -11,6 +12,41 @@ const formatSeconds = sec => {
     return `${h}h ${m}m ${s}s`;
 };
 
+function calculateTaskDuration(task) {
+    let duration = task.totalDuration || 0;
+    if (task.status === TASK_STATUS.RUNNING && task.startedAt) {
+        duration += Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000);
+    }
+    return duration;
+}
+
+function buildSingleTaskReport(task) {
+    const duration = calculateTaskDuration(task);
+    return [
+        `${EMOJI.hundred_points} ${bold('Task Statistics')}: ${bold(task.name || task.taskId)}`,
+        `Status: ${task.status}`,
+        `Total Tracked Time: ${bold(formatSeconds(duration))}`,
+        `Intervals Logged: ${(task.intervals && task.intervals.length) || 0}`
+    ].join('\n');
+}
+
+function buildOverallReport(tasks) {
+    let grandTotalSeconds = 0;
+    const taskSummaries = tasks.map(task => {
+        const duration = calculateTaskDuration(task);
+        grandTotalSeconds += duration;
+        return `${EMOJI.calendar} ${bold(task.name || task.taskId)}: ${formatSeconds(duration)} (${task.status})`;
+    });
+
+    return [
+        `${EMOJI.hundred_points} ${bold('Overall Time Statistics')}`,
+        `Total Tasks: ${tasks.length}`,
+        `Grand Total Tracked: ${bold(formatSeconds(grandTotalSeconds))}`,
+        '',
+        ...taskSummaries
+    ].join('\n');
+}
+
 export async function getStatistic(telegramId, userId, targetParam) {
     const tasks = await Task.listByUser(userId);
     if (!tasks || !tasks.length) {
@@ -18,11 +54,7 @@ export async function getStatistic(telegramId, userId, targetParam) {
         return null;
     }
 
-    const opts = {};
-    if (store.config.PARSE_MODE) {
-        opts.parse_mode = store.config.PARSE_MODE;
-    }
-
+    const opts = getTelegramOptions();
     const param = (targetParam || '').trim();
 
     if (param && param.toLowerCase() !== 'all') {
@@ -32,40 +64,10 @@ export async function getStatistic(telegramId, userId, targetParam) {
             return null;
         }
 
-        let duration = task.totalDuration || 0;
-        if (task.status === TASK_STATUS.RUNNING && task.startedAt) {
-            duration += Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000);
-        }
-
-        const msgContent = [
-            `${EMOJI.hundred_points} ${bold('Task Statistics')}: ${bold(task.name || task.taskId)}`,
-            `Status: ${task.status}`,
-            `Total Tracked Time: ${bold(formatSeconds(duration))}`,
-            `Intervals Logged: ${(task.intervals && task.intervals.length) || 0}`
-        ].join('\n');
-
-        await store.bot.sendMessage(telegramId, msgContent, opts);
+        await store.bot.sendMessage(telegramId, buildSingleTaskReport(task), opts);
         return task;
     }
 
-    let grandTotalSeconds = 0;
-    const taskSummaries = tasks.map(task => {
-        let duration = task.totalDuration || 0;
-        if (task.status === TASK_STATUS.RUNNING && task.startedAt) {
-            duration += Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000);
-        }
-        grandTotalSeconds += duration;
-        return `${EMOJI.calendar} ${bold(task.name || task.taskId)}: ${formatSeconds(duration)} (${task.status})`;
-    });
-
-    const summaryText = [
-        `${EMOJI.hundred_points} ${bold('Overall Time Statistics')}`,
-        `Total Tasks: ${tasks.length}`,
-        `Grand Total Tracked: ${bold(formatSeconds(grandTotalSeconds))}`,
-        '',
-        ...taskSummaries
-    ].join('\n');
-
-    await store.bot.sendMessage(telegramId, summaryText, opts);
+    await store.bot.sendMessage(telegramId, buildOverallReport(tasks), opts);
     return tasks;
 }
