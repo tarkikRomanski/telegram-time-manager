@@ -1,7 +1,19 @@
 import User from './db/Models/User';
 import connectToDb from './db/connect';
 import Task, {PROCESS} from './db/Models/Task';
-import {showTask, endCreate, setTaskDescription, createTask, list, setTaskName} from './endpoints';
+import {
+    showTask,
+    endCreate,
+    setTaskDescription,
+    createTask,
+    list,
+    setTaskName,
+    startTask,
+    pauseTask,
+    deleteTask,
+    editTask,
+    getStatistic
+} from './endpoints';
 import {store} from './components/store';
 
 connectToDb();
@@ -32,6 +44,11 @@ bot.on('message', async msg => {
         const existEditableTasks = await Task.getNotCompleted(user._id);
 
         const showMatch = text.match(/^\/show(?:\s+(.+))?$/);
+        const startMatch = text.match(/^\/start(?:\s+(.+))?$/);
+        const pauseMatch = text.match(/^\/pause(?:\s+(.+))?$/);
+        const deleteMatch = text.match(/^\/delete(?:\s+(.+))?$/);
+        const editMatch = text.match(/^\/edit(?:\s+(.+))?$/);
+        const statMatch = text.match(/^\/statistic(?:\s+(.+))?$/);
 
         switch (true) {
             case /^\/create(?:\s+|$)/.test(text):
@@ -45,6 +62,41 @@ bot.on('message', async msg => {
                 if (existEditableTasks) {
                     await endCreate(telegramUser.id, existEditableTasks.taskId);
                 }
+                break;
+
+            case !!startMatch:
+                if (existEditableTasks) {
+                    await endCreate(telegramUser.id, existEditableTasks.taskId);
+                }
+                await startTask(telegramUser.id, user._id, startMatch[1]);
+                break;
+
+            case !!pauseMatch:
+                if (existEditableTasks) {
+                    await endCreate(telegramUser.id, existEditableTasks.taskId);
+                }
+                await pauseTask(telegramUser.id, user._id, pauseMatch[1]);
+                break;
+
+            case !!deleteMatch:
+                if (existEditableTasks) {
+                    await endCreate(telegramUser.id, existEditableTasks.taskId);
+                }
+                await deleteTask(telegramUser.id, user._id, deleteMatch[1]);
+                break;
+
+            case !!editMatch:
+                if (existEditableTasks) {
+                    await endCreate(telegramUser.id, existEditableTasks.taskId);
+                }
+                await editTask(telegramUser.id, user._id, editMatch[1]);
+                break;
+
+            case !!statMatch:
+                if (existEditableTasks) {
+                    await endCreate(telegramUser.id, existEditableTasks.taskId);
+                }
+                await getStatistic(telegramUser.id, user._id, statMatch[1]);
                 break;
 
             case !!showMatch:
