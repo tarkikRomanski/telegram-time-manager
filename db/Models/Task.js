@@ -22,7 +22,8 @@ Task.getByTaskId = taskId => Task.findOne({taskId});
 
 Task.listByUser = userId => Task.find({process: PROCESS.END, userId});
 
-Task.getNotComplated = userId => Task.findOne({process: {$ne: PROCESS.END}, userId});
+Task.getNotCompleted = userId => Task.findOne({process: {$ne: PROCESS.END}, userId});
+Task.getNotComplated = Task.getNotCompleted;
 
 Task.createTask = newTask => newTask.save();
 

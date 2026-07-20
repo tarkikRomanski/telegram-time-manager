@@ -1,9 +1,13 @@
-const config = require('dotenv').config();
+const dotenv = require('dotenv');
+const result = dotenv.config();
+const envConfig = (result && result.parsed) ? result.parsed : process.env;
+
 const TelegramBot = require('node-telegram-bot-api');
 
-const bot = new TelegramBot(config.parsed.TELEGRAM_TOKEN, {polling: true});
+const token = envConfig.TELEGRAM_TOKEN || process.env.TELEGRAM_TOKEN;
+const bot = new TelegramBot(token, {polling: true});
 
 export const store = {
     bot,
-    config: config.parsed || {}
+    config: envConfig
 };

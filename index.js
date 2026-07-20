@@ -10,53 +10,67 @@ const bot = store.bot;
 
 console.log('Start session');
 
-bot.onText(new RegExp(/show (.+)/), async (msg, match) => await showTask(msg.from.id, match[1] || ''));
-
 bot.on('message', async msg => {
-    const telegramUser = msg.from;
+    try {
+        const telegramUser = msg.from;
+        if (!telegramUser) return;
 
-    if (!await User.getByTelegramId(telegramUser.id)) {
-        const newUser = User({
-            username: telegramUser.username,
-            telegramId: telegramUser.id,
-            lastName: telegramUser.last_name,
-            firstName: telegramUser.first_name,
-            language: telegramUser.language_code,
-        });
+        let user = await User.getByTelegramId(telegramUser.id);
+        if (!user) {
+            const newUser = new User({
+                username: telegramUser.username,
+                telegramId: telegramUser.id,
+                lastName: telegramUser.last_name,
+                firstName: telegramUser.first_name,
+                language: telegramUser.language_code,
+            });
 
-        await User.createUser(newUser);
-    }
+            user = await User.createUser(newUser);
+        }
 
-    const text = msg.text || '';
+        const text = (msg.text || '').trim();
+        const existEditableTasks = await Task.getNotCompleted(user._id);
 
-    const user = await User.getByTelegramId(telegramUser.id);
-    const existEditableTasks = await Task.getNotComplated(user._id);
+        const showMatch = text.match(/^\/show(?:\s+(.+))?$/);
 
-    switch (true) {
-        case text.indexOf('/create') === 0:
-            existEditableTasks && await endCreate(telegramUser.id, existEditableTasks.taskId);
-            await createTask(user._id, telegramUser.id, msg.date);
-            break;
+        switch (true) {
+            case /^\/create(?:\s+|$)/.test(text):
+                if (existEditableTasks) {
+                    await endCreate(telegramUser.id, existEditableTasks.taskId);
+                }
+                await createTask(user._id, telegramUser.id, msg.date);
+                break;
 
-        case text.indexOf('/end') === 0:
-            existEditableTasks && await endCreate(telegramUser.id, existEditableTasks.taskId);
-            break;
+            case /^\/end(?:\s+|$)/.test(text):
+                if (existEditableTasks) {
+                    await endCreate(telegramUser.id, existEditableTasks.taskId);
+                }
+                break;
 
-        case text.indexOf('/show') === 0:
-            existEditableTasks && await endCreate(telegramUser.id, existEditableTasks.taskId);
-            break;
+            case !!showMatch:
+                if (existEditableTasks) {
+                    await endCreate(telegramUser.id, existEditableTasks.taskId);
+                }
+                const targetTaskId = showMatch[1] ? showMatch[1].trim() : (existEditableTasks ? existEditableTasks.taskId : '');
+                await showTask(telegramUser.id, targetTaskId);
+                break;
 
-        case text.indexOf('/list') === 0:
-            existEditableTasks && await endCreate(telegramUser.id, existEditableTasks.taskId);
-            await list(telegramUser.id, user._id);
-            break;
+            case /^\/list(?:\s+|$)/.test(text):
+                if (existEditableTasks) {
+                    await endCreate(telegramUser.id, existEditableTasks.taskId);
+                }
+                await list(telegramUser.id, user._id);
+                break;
 
-        case existEditableTasks && existEditableTasks.process === PROCESS.NAME:
-            await setTaskName(telegramUser.id, existEditableTasks.taskId, text);
-            break;
+            case Boolean(existEditableTasks && existEditableTasks.process === PROCESS.NAME):
+                await setTaskName(telegramUser.id, existEditableTasks.taskId, text);
+                break;
 
-        case existEditableTasks && existEditableTasks.process === PROCESS.DESCRIPTION:
-            await setTaskDescription(telegramUser.id, existEditableTasks.taskId, msg);
-            break;
+            case Boolean(existEditableTasks && existEditableTasks.process === PROCESS.DESCRIPTION):
+                await setTaskDescription(telegramUser.id, existEditableTasks.taskId, msg);
+                break;
+        }
+    } catch (err) {
+        console.error('Error handling message:', err);
     }
 });
